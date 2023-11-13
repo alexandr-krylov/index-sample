@@ -24,6 +24,7 @@ class Index
         $this->pointer = $this->root;
         while (true) {
             $height++;
+            $this->index[$this->pointer]->height = $height - 1;
             if ($value == $this->index[$this->pointer]->data) {
                 return $this;
             }
@@ -38,6 +39,7 @@ class Index
                     }
                     return $this;
                 }
+
                 $this->pointer = $this->index[$this->pointer]->right;
                 continue;
             }
@@ -169,6 +171,14 @@ class Index
                 if (!is_null($leftRightKey)) {
                     $this->index[$leftRightKey]->parent = $unbalansingNodeKey;
                 }
+                // change rightHeight, leftHeight
+                $unbalansedLeftHeight = $this->index[$leftKey]->rightHeight;
+                $this->index[$unbalansingNodeKey]->leftHeight = $unbalansedLeftHeight;
+                var_dump('change leftHeight', $unbalansedLeftHeight);
+                $leftRightHeight = 
+                max($this->index[$unbalansingNodeKey]->rightHeight, $this->index[$unbalansingNodeKey]->leftHeight);
+                var_dump('change rightHeight', $leftRightHeight);
+                $this->index[$leftKey]->rightHeight = $leftRightHeight + 1;
                 return;
             }
             if (
