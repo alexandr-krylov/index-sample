@@ -1,0 +1,7 @@
+services:
+  app:
+    build:
+      context: ./docker/php/
+    working_dir: /var/www/index-sample
+    volumes: 
+      - .:/var/www/index-sample
