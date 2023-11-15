@@ -20,8 +20,8 @@ class IndexSearcherTest extends TestCase
     }
     public function testGenerateIndex()
     {
-        $key = "recclass";
-        $value = "L6";
+        $key = "reclat";
+        $value = "54.216670";
         $this->indexSearcher->generateIndex($key, $this->documentSet);
         $this->indexSearcher->saveIndexFile($this->indexFileName);
         $this->indexSearcher->readIndexFile($this->indexFileName);
