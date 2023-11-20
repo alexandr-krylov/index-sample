@@ -9,48 +9,45 @@ class Index
     public array $index = [];
     public string $indexKey;
     private int $counter = 0;
+    private int $maxHeight = 0;
+    private int $height = 0;
+    private ?int $unbalansedNodeKey = null;
     public function __construct($indexKey)
     {
         $this->indexKey = $indexKey;
     }
     public function addElement($key, $value)
     {
-        $height = 1;
         if (is_null($this->root)) {
             $this->root = $key;
-            $this->addNode($key, $value, $height);
+            $this->addNode($key, $value);
             return $this;
         }
         $this->pointer = $this->root;
         while (true) {
-            $height++;
-            $this->index[$this->pointer]->height = $height - 1;
             if ($value == $this->index[$this->pointer]->data) {
                 return $this;
             }
             if ($value > $this->index[$this->pointer]->data) {
                 if (is_null($this->index[$this->pointer]->right)) {
                     $this->index[$this->pointer]->right = $key;
-                    $this->index[$this->pointer]->rightHeight = 1;
-                    $this->addNode($key, $value, $height);
-                    $unbalansedNode = $this->findUnbalancedNodeUp();
-                    if (!is_null($unbalansedNode)) {
-                        $this->balansing($unbalansedNode);
+                    $this->addNode($key, $value);
+                    $this->findUnbalancedNodeUp();
+                    if (!is_null($this->unbalansedNodeKey)) {
+                        $this->balansing($this->unbalansedNodeKey);
                     }
                     return $this;
                 }
-
                 $this->pointer = $this->index[$this->pointer]->right;
                 continue;
             }
             if ($value < $this->index[$this->pointer]->data) {
                 if (is_null($this->index[$this->pointer]->left)) {
                     $this->index[$this->pointer]->left = $key;
-                    $this->index[$this->pointer]->leftHeight = 1;
-                    $this->addNode($key, $value, $height);
-                    $unbalansedNode = $this->findUnbalancedNodeUp();
-                    if (!is_null($unbalansedNode)) {
-                        $this->balansing($unbalansedNode);
+                    $this->addNode($key, $value);
+                    $this->findUnbalancedNodeUp();
+                    if (!is_null($this->unbalansedNodeKey)) {
+                        $this->balansing($this->unbalansedNodeKey);
                     }
                     return $this;
                 }
@@ -59,16 +56,13 @@ class Index
             }
         }
     }
-    private function addNode($key, $value, $height)
+    private function addNode($key, $value)
     {
         $this->index[$key] = new class {
         };
         $this->index[$key]->data = $value;
         $this->index[$key]->left = null;
-        $this->index[$key]->leftHeight = 0;
         $this->index[$key]->right = null;
-        $this->index[$key]->rightHeight = 0;
-        $this->index[$key]->height = $height;
         $this->index[$key]->parent = $this->pointer;
         $this->pointer = $key;
     }
@@ -112,29 +106,8 @@ class Index
     }
     private function findUnbalancedNodeUp()
     {
-        $thisNodePointer = $this->pointer;
-        var_dump('inserted', $thisNodePointer);
-        $thisHeight = $this->index[$thisNodePointer]->height;
-        $parentNodePointer = $this->index[$thisNodePointer]->parent;
-        while (!is_null($parentNodePointer)) {
-            $parentNode = $this->index[$parentNodePointer];
-            if ($parentNode->left == $thisNodePointer) {
-                if ($parentNode->leftHeight < $thisHeight - $parentNode->height) {
-                    $parentNode->leftHeight = $thisHeight - $parentNode->height;
-                }
-            }
-            if ($parentNode->right == $thisNodePointer) {
-                if ($parentNode->rightHeight < $thisHeight - $parentNode->height) {
-                    $parentNode->rightHeight = $thisHeight - $parentNode->height;
-                }
-            }
-            if (abs($parentNode->leftHeight - $parentNode->rightHeight) > 1) {
-                var_dump('unbalansed', $parentNodePointer);
-                return $parentNodePointer;
-            }
-            $thisNodePointer = $parentNodePointer;
-            $parentNodePointer = $this->index[$thisNodePointer]->parent;
-        }
+        $this->unbalansedNodeKey = null;
+        $this->traversal($this->root);
     }
     private function balansing($unbalansedNodeKey)
     {
@@ -147,7 +120,6 @@ class Index
                 $this->index[$this->index[$unbalansedNodeKey]->left]->data
             ) {
                 //LL - symptom
-                var_dump('LL - symptom');
                 $this->llRotate($unbalansedNodeKey);
                 return;
             }
@@ -156,7 +128,9 @@ class Index
                 $this->index[$this->index[$unbalansedNodeKey]->left]->data
             ) {
                 //LR - symptom
-                var_dump('LR - symptom');
+
+                $this->lrRotate($unbalansedNodeKey);
+                return;
             }
         }
         if (
@@ -168,7 +142,6 @@ class Index
                 $this->index[$this->index[$unbalansedNodeKey]->right]->data
             ) {
                 //RR - symptom
-                var_dump('RR - symptom');
                 $this->rrRotate($unbalansedNodeKey);
                 return;
             }
@@ -177,7 +150,8 @@ class Index
                 $this->index[$this->index[$unbalansedNodeKey]->right]->data
             ) {
                 //RL - symptom
-                var_dump('RL - symptom');
+                $this->rlRotate($unbalansedNodeKey);
+                return;
             }
         }
     }
@@ -206,17 +180,44 @@ class Index
         if (!is_null($leftRightKey)) {
             $this->index[$leftRightKey]->parent = $nodeKey;
         }
-        // change rightHeight, leftHeight
-        $unbalansedLeftHeight = $this->index[$leftKey]->rightHeight;
-        $this->index[$nodeKey]->leftHeight = $unbalansedLeftHeight;
-        $leftRightHeight = 
-        max($this->index[$nodeKey]->rightHeight, $this->index[$nodeKey]->leftHeight);
-        $this->index[$leftKey]->rightHeight = $leftRightHeight + 1;
         return;
     }
     private function lrRotate($nodeKey)
     {
-
+        $leftKey = $this->index[$nodeKey]->left;
+        $leftRightKey = $this->index[$leftKey]->right;
+        $parentKey = $this->index[$nodeKey]->parent;
+        // left right become top
+        $this->index[$leftRightKey]->parent = $parentKey;
+        if (is_null($parentKey)) {
+            $this->root = $leftRightKey;
+        } else {
+            if ($this->index[$parentKey]->left == $nodeKey) {
+                $this->index[$parentKey]->left = $leftRightKey;
+            }
+            if ($this->index[$parentKey]->right == $nodeKey) {
+                $this->index[$parentKey]->right = $leftRightKey;
+            }
+        }
+        //right for leftRight bocome left for unbalansed
+        $rightForLeftRightKey = $this->index[$leftRightKey]->right;
+        $leftForLeftRightKey = $this->index[$leftRightKey]->left;
+        $this->index[$nodeKey]->left = $rightForLeftRightKey;
+        if (!is_null($rightForLeftRightKey)) {
+            $this->index[$rightForLeftRightKey]->parent = $nodeKey;
+        }
+        //connect leftRight with unbalansed
+        $this->index[$leftRightKey]->right = $nodeKey;
+        $this->index[$nodeKey]->parent = $leftRightKey;
+        //connect left with leftRight
+        $this->index[$leftRightKey]->left = $leftKey;
+        $this->index[$leftKey]->parent = $leftRightKey;
+        //connect left with leftForLeftRight
+        $this->index[$leftKey]->right = $leftForLeftRightKey;
+        if (!is_null($leftForLeftRightKey)) {
+            $this->index[$leftForLeftRightKey]->parent = $leftKey;
+        }
+        return;
     }
     private function rrRotate($nodeKey)
     {
@@ -243,16 +244,89 @@ class Index
         if (!is_null($rightLeftKey)) {
             $this->index[$rightLeftKey]->parent = $nodeKey;
         }
-        // change rightHeight, leftHeight
-        $unbalansedRightHeight = $this->index[$rightKey]->leftHeight;
-        $this->index[$nodeKey]->rightHeight = $unbalansedRightHeight;
-        $rightLeftHeight =
-        max($this->index[$nodeKey]->rightHeight, $this->index[$nodeKey]->leftHeight);
-        $this->index[$rightKey]->leftHeight = $rightLeftHeight + 1;
         return;
     }
     private function rlRotate($nodeKey)
     {
-        
+        $rightKey = $this->index[$nodeKey]->right;
+        $rightLeftKey = $this->index[$rightKey]->left;
+        $parentKey = $this->index[$nodeKey]->parent;
+        // right left become top
+        $this->index[$rightLeftKey]->parent = $parentKey;
+        if (is_null($parentKey)) {
+            $this->root = $rightLeftKey;
+        } else {
+            if ($this->index[$parentKey]->left == $nodeKey) {
+                $this->index[$parentKey]->left = $rightLeftKey;
+            }
+            if ($this->index[$parentKey]->right == $nodeKey) {
+                $this->index[$parentKey]->right = $rightLeftKey;
+            }
+        }
+        //left for rightLeft bocome right for unbalansed
+        $leftForRightLeftKey = $this->index[$rightLeftKey]->left;
+        $rightForRightLeftKey = $this->index[$rightLeftKey]->right;
+        $this->index[$nodeKey]->right = $leftForRightLeftKey;
+        if (!is_null($leftForRightLeftKey)) {
+            $this->index[$leftForRightLeftKey]->parent = $nodeKey;
+        }
+        //connect rightLeft with unbalansed
+        $this->index[$rightLeftKey]->left = $nodeKey;
+        $this->index[$nodeKey]->parent = $rightLeftKey;
+        //connect right with rightLeft
+        $this->index[$rightLeftKey]->right = $rightKey;
+        $this->index[$rightKey]->parent = $rightLeftKey;
+        //connect right with rightForRightLeft
+        $this->index[$rightKey]->left = $rightForRightLeftKey;
+        if (!is_null($rightForRightLeftKey)) {
+            $this->index[$rightForRightLeftKey]->parent = $rightKey;
+        }
+        return;
+    }
+    private function traversal($nodeKey)
+    {
+        if (!is_null($this->index[$nodeKey]->left)) {
+            $this->traversal($this->index[$nodeKey]->left);
+        }
+        if (!is_null($this->index[$nodeKey]->right)) {
+            $this->traversal($this->index[$nodeKey]->right);
+        }
+        if (is_null($this->index[$nodeKey]->left)) {
+            $leftDeep = 0;
+        } else {
+            $this->height = 0;
+            $this->maxHeight = 0;
+            $this->maxDeep($this->index[$nodeKey]->left);
+            $leftDeep = $this->maxHeight + 1;
+        }
+        if (is_null($this->index[$nodeKey]->right)) {
+            $rightDeep = 0;
+        } else {
+            $this->height = 0;
+            $this->maxHeight = 0;
+            $this->maxDeep($this->index[$nodeKey]->right);
+            $rightDeep = $this->maxHeight + 1;
+        }
+        if (abs($rightDeep - $leftDeep) > 1) {
+            $this->unbalansedNodeKey = $nodeKey;
+        }
+    }
+    private function maxDeep($nodeKey)
+    {
+        if (!is_null($this->index[$nodeKey]->left)) {
+            $this->height++;
+            if ($this->height > $this->maxHeight) {
+                $this->maxHeight = $this->height;
+            }
+            $this->maxDeep($this->index[$nodeKey]->left);
+        }
+        if (!is_null($this->index[$nodeKey]->right)) {
+            $this->height++;
+            if ($this->height > $this->maxHeight) {
+                $this->maxHeight = $this->height;
+            }
+            $this->maxDeep($this->index[$nodeKey]->right);
+        }
+        $this->height--;
     }
 }
