@@ -18,7 +18,8 @@ class IndexSearcher extends SearcherAbstract
     }
     public function generateIndex(string $indexKey, DocumentSet $documentSet)
     {
-        $this->index = new Index($indexKey);
+        $this->index = new Index();
+        $this->index->setIndexKey($indexKey);
         foreach ($documentSet->getDocuments() as $key => $document) {
             if (property_exists($document, $indexKey)) {
                 $this->index->addElement($key, $document->$indexKey);
@@ -27,6 +28,7 @@ class IndexSearcher extends SearcherAbstract
     }
     public function readIndexFile(string $filename)
     {
+        $this->index = new Index();
         $this->index->restore($filename);
     }
     public function saveIndexFile(string $filename)

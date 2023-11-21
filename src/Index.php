@@ -12,10 +12,7 @@ class Index
     private int $maxHeight = 0;
     private int $height = 0;
     private ?int $unbalansedNodeKey = null;
-    public function __construct($indexKey)
-    {
-        $this->indexKey = $indexKey;
-    }
+
     public function addElement($key, $value)
     {
         if (is_null($this->root)) {
@@ -59,6 +56,10 @@ class Index
     private function addNode($key, $value)
     {
         $this->index[$key] = new class {
+            public $data;
+            public $left;
+            public $right;
+            public $parent;
         };
         $this->index[$key]->data = $value;
         $this->index[$key]->left = null;
@@ -328,5 +329,9 @@ class Index
             $this->maxDeep($this->index[$nodeKey]->right);
         }
         $this->height--;
+    }
+    public function setIndexKey($indexKey)
+    {
+        $this->indexKey = $indexKey;
     }
 }
