@@ -8,8 +8,10 @@ docker exec -it index-sample_app_1 composer install
 docker exec -it index-sample_app_1 composer setup
 ```
 ## Code sniffing and testing
-docker exec -it index-sample_app_1 composer code-sniffer
+```
+docker exec -it index-sample_app_1 composer code-sniffer  
 docker exec -it index-sample_app_1 composer test
+```
 ## Use
 ### Find without index
 `flatfind.php <name> <value> <filename>`  
