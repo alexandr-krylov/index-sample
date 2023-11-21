@@ -5,6 +5,7 @@ git clone https://github.com/alexandr-krylov/index-sample.git
 cd index-sample
 docker-compose up -d
 docker exec -it index-sample_app_1 composer install
+docker exec -it index-sample_app_1 composer setup
 ```
 ## Code sniffing and testing
 

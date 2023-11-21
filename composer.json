@@ -27,6 +27,7 @@
         "test": "./vendor/bin/phpunit ./tests",
         "code-sniffer": [
             "./vendor/bin/phpcs --colors --standard=PSR12 ./src ./tests"
-        ]
+        ],
+        "setup": "chmod +x createindex.php flatfind.php indexfind.php"
     }
 }
